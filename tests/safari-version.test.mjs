@@ -26,11 +26,19 @@ test("accepts Safari versions older than 26", () => {
   });
 });
 
-test("directs Safari 27 users to the native MCP server", () => {
+test("accepts Safari 27 for existing-session Apple Events automation", () => {
   assert.deepEqual(evaluateSafariVersion("27.0"), {
-    supported: false,
+    supported: true,
     major: 27,
-    reason: "Safari 27 includes a native MCP server; use /usr/bin/safaridriver --mcp."
+    reason: null
+  });
+});
+
+test("still rejects untested future Safari versions", () => {
+  assert.deepEqual(evaluateSafariVersion("28.0"), {
+    supported: false,
+    major: 28,
+    reason: "Safari 28 includes a native MCP server; use /usr/bin/safaridriver --mcp."
   });
 });
 

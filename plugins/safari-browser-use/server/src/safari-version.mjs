@@ -1,4 +1,5 @@
-const MAX_SUPPORTED_SAFARI_MAJOR = 26;
+// Keep existing-session Apple Events automation available on Safari 27.
+const MAX_SUPPORTED_SAFARI_MAJOR = 27;
 
 export function parseSafariMajor(version) {
   const match = /^(\d+)(?:\.|$)/.exec(version);

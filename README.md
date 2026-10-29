@@ -25,12 +25,30 @@ Xcode, or an Apple Developer certificate. The Skill-only mode uses the Node.js
 runtime available to the agent to preserve its script session between calls.
 
 > [!NOTE]
-> **Safari version support:** Safari Browser Use supports Safari 26 and earlier
-> through Apple Events. Starting with Safari 27 beta, WebKit includes an
-> official Safari MCP server that lets any MCP-compatible agent connect
-> directly through `safaridriver --mcp`. Safari 27 users should prefer Apple's
-> native server. See
-> [Introducing the Safari MCP server for web developers](https://webkit.org/blog/18136/introducing-the-safari-mcp-server-for-web-developers/).
+> **Fork: experimental Safari 27 support.** This fork of
+> [citrolabs/safari-browser-use](https://github.com/citrolabs/safari-browser-use)
+> permits Safari 27 to keep using Apple Events and existing signed-in tabs.
+> Reading an existing tab, navigating a new tab in a specific window, and
+> retaining a website login across bridge restarts were verified on Safari 27.0.
+> Advanced interactions have not been verified. Safari 28+ remains blocked.
+>
+> Apple's native `safaridriver --mcp` is a separate option, but in our Safari 27.0
+> test it used a separate login session that did not survive a server restart.
+>
+> The installation commands below are upstream instructions. To use this fork
+> with pi, clone `Destiner/safari-browser-use` and register its bundled server:
+>
+> ```sh
+> pi mcp add safari --exposure deferred -- /usr/bin/osascript -l JavaScript "$PWD/plugins/safari-browser-use/dist/safari-repl.jxa.js"
+> ```
+>
+> Run that command from this checkout, then use `/reload` in pi. No build is
+> required for the committed bundle. After source changes, regenerate both
+> bundled runtimes and run the test suite using the scripts in `package.json`.
+>
+> With multiple profiles, confirm the intended window before browsing and pass
+> its `windowId` when creating tabs. Window IDs are not persistent profile names,
+> and this bridge does not enforce isolation between profiles.
 
 ## Demo
 
