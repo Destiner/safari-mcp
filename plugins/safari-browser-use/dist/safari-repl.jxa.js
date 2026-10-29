@@ -739,6 +739,28 @@ function runPageOperation(
       }
     }
 
+    // Match the snapshot's naming rules for native input buttons.
+    if (
+      element.tagName === "INPUT" &&
+      ["button", "submit", "reset"].includes(element.type)
+    ) {
+      const value = normalizeText(element.value);
+
+      if (value) {
+        return value;
+      }
+
+      if (element.type === "submit") {
+        return "Submit";
+      }
+
+      if (element.type === "reset") {
+        return "Reset";
+      }
+
+      return normalizeText(element.getAttribute("title"));
+    }
+
     const associatedLabel = element.labels?.[0];
 
     if (associatedLabel) {
@@ -2231,7 +2253,14 @@ function createEverydayTools(adapter) {
           resolve(entry, adapter.listTabs());
           const action = args.actions[index];
           const target = action.target && locator(entry.page, action.target);
-          if (target && target.count() !== 1) throw new Error("strict_locator: expected exactly one element");
+          if (target) {
+            const count = target.count();
+            if (count !== 1) {
+              throw new Error(
+                "strict_locator: expected exactly one element; resolved to " + count + " elements"
+              );
+            }
+          }
           let result;
           if (action.type === "click") result = target.click();
           if (action.type === "type") result = target.type(action.text);

@@ -211,12 +211,28 @@ test("strict uniqueness and runtime errors return partial progress without retry
     { type: "scroll", delta_y: 10 }, { type: "click", target: { selector: "button" } }, { type: "scroll", delta_y: 10 }
   ] });
   assert.equal(result.ok, false); assert.equal(result.completed, 1); assert.equal(result.failed_index, 1);
-  assert.match(result.error, /strict_locator/);
+  assert.equal(result.error, "strict_locator: expected exactly one element; resolved to 2 elements");
   assert.equal(f.calls.filter(call => Array.isArray(call) && call[0] === "scroll").length, 1);
   assert.equal(f.calls.at(-1), "release");
   f.count(1); f.fail(true);
   const failed = f.api.call("page_interactions", { handle: h, actions: [{ type: "click", target: { selector: "button" } }] });
   assert.equal(failed.completed, 0); assert.match(failed.error, /action failed/);
+});
+
+test("zero-match diagnostics report the count without attempting the action", () => {
+  const f = fixture();
+  const h = handle(f);
+  f.count(0);
+  const result = f.api.call("page_interactions", {
+    handle: h,
+    actions: [{ type: "click", target: { role: "button", name: "Go" } }]
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.completed, 0);
+  assert.equal(result.failed_index, 0);
+  assert.equal(result.error, "strict_locator: expected exactly one element; resolved to 0 elements");
+  assert.equal(f.calls.filter(call => call === "count").length, 1);
+  assert.equal(f.calls.some(call => Array.isArray(call) && call[0] === "click"), false);
 });
 
 test("creation supports existing blank tabs and duplicate destinations; failures retain cleanup handles", () => {

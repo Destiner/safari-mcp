@@ -64,6 +64,59 @@ test("returns a Playwright-style YAML snapshot", () => {
   );
 });
 
+for (const [description, html, name, displayedValue] of [
+  ["submit value", '<input id="target" type="submit" value="Go">', "Go"],
+  ["reset value", '<input id="target" type="reset" value="Clear">', "Clear"],
+  ["button value", '<input id="target" type="button" value="Continue">', "Continue"],
+  ["normalized value", '<input id="target" type="SUBMIT" value="  Go   now  ">', "Go now"],
+  ["default submit", '<input id="target" type="submit" title="Ignored">', "Submit"],
+  ["default reset", '<input id="target" type="reset" value="   ">', "Reset"],
+  ["button title fallback", '<input id="target" type="button" title="Details">', "Details"],
+  ["unnamed button", '<input id="target" type="button">', ""],
+  ["ARIA label priority", '<input id="target" type="submit" value="Go" aria-label="Search">', "Search", "Go"],
+  ["referenced label priority", '<span id="label">Search site</span><input id="target" type="submit" value="Go" aria-labelledby="label">', "Search site", "Go"],
+  ["value before associated label and title", '<label for="target">Not the name</label><input id="target" type="submit" value="Go" title="Also not the name">', "Go"]
+]) {
+  test(`input button snapshot/locator parity: ${description}`, t => {
+    const page = createSnapshotPage(html);
+    t.after(() => page.window.happyDOM.abort());
+    const locator = [{ type: "role", role: "button", name, exact: true }];
+    const execute = (method, params) => runPageOperation(
+      page.window.document, page.window, method, params
+    );
+
+    assert.equal(
+      page.snapshot({ root: "#target" }),
+      (name ? `- button "${name}"` : "- button") +
+        (displayedValue ? `: ${displayedValue}` : "")
+    );
+    assert.equal(execute("playwright.locator.count", { locator }), 1);
+
+    let clicks = 0;
+    page.window.document.getElementById("target").addEventListener("click", () => clicks++);
+    execute("playwright.locator.click", { locator });
+    assert.equal(clicks, 1);
+  });
+}
+
+test("input button locators use the current value without naming textboxes from values", t => {
+  const page = createSnapshotPage(`
+    <input id="target" type="submit" value="Old name">
+    <input id="text" value="Not a label">
+  `);
+  t.after(() => page.window.happyDOM.abort());
+  page.window.document.getElementById("target").value = "New name";
+  const count = (role, name) => runPageOperation(
+    page.window.document, page.window, "playwright.locator.count",
+    { locator: [{ type: "role", role, name, exact: true }] }
+  );
+
+  assert.equal(page.snapshot({ root: "#target" }), '- button "New name"');
+  assert.equal(count("button", "New name"), 1);
+  assert.equal(count("button", "Old name"), 0);
+  assert.equal(count("textbox", "Not a label"), 0);
+});
+
 test("renders stable locator metadata as YAML properties", () => {
   const page = createSnapshotPage(`
     <section data-testid="product-card">

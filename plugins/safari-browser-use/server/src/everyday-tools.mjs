@@ -190,7 +190,14 @@ export function createEverydayTools(adapter) {
           resolve(entry, adapter.listTabs());
           const action = args.actions[index];
           const target = action.target && locator(entry.page, action.target);
-          if (target && target.count() !== 1) throw new Error("strict_locator: expected exactly one element");
+          if (target) {
+            const count = target.count();
+            if (count !== 1) {
+              throw new Error(
+                "strict_locator: expected exactly one element; resolved to " + count + " elements"
+              );
+            }
+          }
           let result;
           if (action.type === "click") result = target.click();
           if (action.type === "type") result = target.type(action.text);

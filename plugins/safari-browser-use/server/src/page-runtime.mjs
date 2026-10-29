@@ -731,6 +731,28 @@ export function runPageOperation(
       }
     }
 
+    // Match the snapshot's naming rules for native input buttons.
+    if (
+      element.tagName === "INPUT" &&
+      ["button", "submit", "reset"].includes(element.type)
+    ) {
+      const value = normalizeText(element.value);
+
+      if (value) {
+        return value;
+      }
+
+      if (element.type === "submit") {
+        return "Submit";
+      }
+
+      if (element.type === "reset") {
+        return "Reset";
+      }
+
+      return normalizeText(element.getAttribute("title"));
+    }
+
     const associatedLabel = element.labels?.[0];
 
     if (associatedLabel) {
