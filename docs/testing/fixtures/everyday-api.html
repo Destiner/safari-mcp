@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; form-action 'none'; base-uri 'none'">
+<link rel="icon" href="data:,">
+<title>Safari everyday API fixture</title>
+<style>
+body { font: 18px system-ui; margin: 32px; max-width: 900px; }
+section { margin: 20px 0; } label, output { display: block; margin: 8px 0; }
+button, input, select { font: inherit; padding: 8px; }
+.spacer { height: 2200px; background: linear-gradient(#eee, #fff); }
+</style>
+</head>
+<body>
+<main data-testid="fixture-main">
+<h1>Safari everyday API fixture</h1>
+<p>Local synthetic data only. No external requests or form submissions.</p>
+<section><label for="text">Harmless text</label><input id="text" autocomplete="off"><output id="text-result">Text value: empty</output></section>
+<section><label for="choice">Test choice</label><select id="choice"><option value="alpha">Alpha (value alpha)</option><option value="beta">Beta (value beta)</option></select><output id="choice-result">Selected value: alpha</output></section>
+<section><button id="hover" type="button">Hover target</button><output id="hover-result">Hover status: idle</output></section>
+<section><label for="enter">Enter command</label><input id="enter" autocomplete="off"><output id="enter-result">Enter status: idle</output></section>
+<section><button id="delayed" type="button">Change content after delay</button><output id="delay-result">Delayed status: idle</output></section>
+<section><button id="navigate" type="button">Navigate after delay</button><output id="navigation-result">Navigation status: idle</output></section>
+<section><button id="batch" type="button">Increment batch counter</button><output id="batch-result">Batch count: 0</output></section>
+<section><button class="duplicate" type="button">Duplicate action</button><button class="duplicate" type="button">Duplicate action</button><output id="duplicate-result">Duplicate count: 0</output></section>
+<p id="scroll-result">Scroll position: 0</p>
+<div class="spacer" aria-hidden="true"></div>
+<section data-testid="below-fold"><h2>Below viewport content</h2><p>Bottom marker: cobalt lighthouse.</p><p id="viewport-result">Bottom visibility: not observed</p></section>
+</main>
+<script>
+const byId = id => document.getElementById(id);
+byId('text').addEventListener('input', event => { byId('text-result').textContent = 'Text value: ' + (event.target.value || 'empty'); });
+byId('choice').addEventListener('change', event => { byId('choice-result').textContent = 'Selected value: ' + event.target.value; });
+byId('hover').addEventListener('mouseover', () => { byId('hover-result').textContent = 'Hover status: observed'; });
+byId('enter').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); byId('enter-result').textContent = 'Enter status: received ' + event.target.value; } });
+byId('delayed').addEventListener('click', () => { byId('delay-result').textContent = 'Delayed status: pending'; setTimeout(() => { byId('delay-result').textContent = 'Delayed status: complete after 800ms'; }, 800); });
+byId('navigate').addEventListener('click', () => { byId('navigation-result').textContent = 'Navigation status: pending'; setTimeout(() => { location.href = 'everyday-api-destination.html'; }, 1500); });
+let batchCount = 0;
+byId('batch').addEventListener('click', () => { byId('batch-result').textContent = 'Batch count: ' + ++batchCount; });
+let duplicateCount = 0;
+document.querySelectorAll('.duplicate').forEach(button => button.addEventListener('click', () => { byId('duplicate-result').textContent = 'Duplicate count: ' + ++duplicateCount; }));
+addEventListener('scroll', () => { byId('scroll-result').textContent = 'Scroll position: ' + Math.round(scrollY); });
+new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) byId('viewport-result').textContent = 'Bottom visibility: observed in viewport'; }).observe(document.querySelector('[data-testid="below-fold"]'));
+</script>
+</body>
+</html>
