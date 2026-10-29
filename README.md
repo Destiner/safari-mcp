@@ -1,23 +1,21 @@
-<div align="center">
+# Safari MCP
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=220&section=header&text=Safari%20Browser%20Use&fontSize=52&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Native%20Safari%20Automation%20for%20AI%20Agents&descAlignY=60&descSize=18" width="100%" alt="Safari Browser Use"/>
+**Control your existing Safari tabs and signed-in sessions with AI agents — no browser extension or companion app required.**
 
-**Control your existing Safari 26 tabs with AI agents — no browser extension or companion app required.**
+[![macOS](https://img.shields.io/badge/macOS-required-black)](https://www.apple.com/macos/)
+[![Safari](https://img.shields.io/badge/Safari-27%20experimental-blue)](https://www.apple.com/safari/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/Destiner/safari-mcp)](https://github.com/Destiner/safari-mcp)
 
-[![Version](https://img.shields.io/badge/Version-0.1.2--20260902-6C63FF?style=for-the-badge)](https://github.com/citrolabs/safari-browser-use)
-[![macOS](https://img.shields.io/badge/macOS-Required-000000?style=for-the-badge&logo=apple&logoColor=white)](https://www.apple.com/macos/)
-[![Safari](https://img.shields.io/badge/Safari-26-006CFF?style=for-the-badge&logo=safari&logoColor=white)](https://www.apple.com/safari/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-00C4CC?style=for-the-badge)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/citrolabs/safari-browser-use?style=for-the-badge&logo=github&color=FFD700)](https://github.com/citrolabs/safari-browser-use/stargazers)
-[![GitHub followers](https://img.shields.io/github/followers/citrolabs?style=for-the-badge&logo=github&color=181717)](https://github.com/citrolabs)
-</div>
+An independent fork of [Safari Browser Use](https://github.com/citrolabs/safari-browser-use)
+by CitroLabs. This is **not Apple's native Safari MCP server**.
 
 ## Overview
 
-Safari Browser Use gives **AI agents such as Codex, Claude Code, GitHub Copilot,
-Cursor, Kiro, CodeBuddy, WorkBuddy, and Qoder** safe, visible control of the
-Safari tabs you already have open. It preserves your current sessions and logins
-while exposing a synchronous JavaScript REPL and a Playwright-style browser API.
+Safari MCP gives MCP-compatible agents, including **pi, Codex, and Claude Code**,
+control of the Safari tabs you already have open. It preserves your current
+sessions and logins, with named tools for everyday browsing and a synchronous
+JavaScript REPL as an escape hatch.
 
 It connects through the Apple Events support built into macOS.
 Plugin mode does not require Node.js, npm, a Safari extension, a companion app,
@@ -30,13 +28,15 @@ runtime available to the agent to preserve its script session between calls.
 > permits Safari 27 to keep using Apple Events and existing signed-in tabs.
 > Reading an existing tab, navigating a new tab in a specific window, and
 > retaining a website login across bridge restarts were verified on Safari 27.0.
-> Advanced interactions have not been verified. Safari 28+ remains blocked.
+> Amazon, X, and controlled fixture results are documented in the
+> [live test report](docs/testing/everyday-api-live-report.md), including known
+> limitations and workarounds. Safari 28+ remains blocked.
 >
 > Apple's native `safaridriver --mcp` is a separate option, but in our Safari 27.0
 > test it used a separate login session that did not survive a server restart.
 >
 > The installation commands below are upstream instructions. To use this fork
-> with pi, clone `Destiner/safari-browser-use` and register its bundled server:
+> with pi, clone `Destiner/safari-mcp` and register its bundled server:
 >
 > ```sh
 > pi mcp add safari --exposure deferred -- /usr/bin/osascript -l JavaScript "$PWD/plugins/safari-browser-use/dist/safari-repl.jxa.js"
@@ -50,9 +50,9 @@ runtime available to the agent to preserve its script session between calls.
 > its `windowId` when creating tabs. Window IDs are not persistent profile names,
 > and this bridge does not enforce isolation between profiles.
 
-## Everyday MCP API (fork)
+## Everyday MCP API
 
-The fork also exposes an Apple-style everyday API over the existing Safari
+Safari MCP exposes an Apple-style everyday API over the existing Safari
 session. It is not a drop-in replacement for Apple's native MCP server:
 
 - **Connection:** `browser_status`, `release_control`
@@ -85,7 +85,11 @@ plugin/skill REPL interface below remains available.
 
 <p align="center"><em>An AI agent inspecting an existing Safari tab with the visible control indicator enabled.</em></p>
 
-## Installation
+## Upstream plugin installation
+
+The following commands install CitroLabs' original Safari Browser Use, **not
+this fork**. For Safari MCP, use the local bundled-server setup above. Internal
+`plugins/safari-browser-use` paths and plugin IDs are retained for compatibility.
 
 ### 1. Plugin — one-line prompt with client routing
 
@@ -206,7 +210,7 @@ Restart Cursor after installation.
 ## First-Time Setup
 
 Before using browser automation, enable JavaScript from Apple Events in Safari.
-Safari Browser Use cannot inspect or interact with web pages while this setting
+Safari MCP cannot inspect or interact with web pages while this setting
 is disabled.
 
 1. Open **Safari Settings → Advanced**, then enable
@@ -231,7 +235,7 @@ client automate Safari.
 
 Open Safari, then ask your agent:
 
-> Use Safari Browser Use to inspect my current Safari tab and summarize the
+> Use Safari MCP to inspect my current Safari tab and summarize the
 > page. Do not click or type anything.
 
 The agent checks the connection, selects the active tab, and reads a structured
@@ -258,7 +262,7 @@ the indicator in the new page before the same browser call returns.
 
 ## Safety
 
-Safari Browser Use can inspect and interact with pages through your existing
+Safari MCP can inspect and interact with pages through your existing
 browser session. Consequential actions—such as sending a message, submitting a
 form, making a purchase, changing account settings, or deleting data—require
 clear user authorization.
@@ -270,8 +274,8 @@ not remain attached indefinitely.
 ## Support
 
 Found a bug or have an idea? Open an
-[issue](https://github.com/citrolabs/safari-browser-use/issues) or explore
-more projects from [CitroLabs](https://github.com/citrolabs).
+[issue](https://github.com/Destiner/safari-mcp/issues) in this fork.
+For upstream development, see [CitroLabs' original project](https://github.com/citrolabs/safari-browser-use).
 
 <div align="center">
 
@@ -281,4 +285,6 @@ more projects from [CitroLabs](https://github.com/citrolabs).
 
 ## License
 
-Safari Browser Use is available under the [MIT License](LICENSE).
+Safari MCP is available under the [MIT License](LICENSE), retaining the original
+Safari Browser Use attribution. Bundled Playwright code has its own
+[license and notices](third_party/playwright/README.md).
