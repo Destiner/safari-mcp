@@ -1,3 +1,5 @@
+import { everydayToolDefinitions } from "./everyday-tools.mjs";
+
 const emptyInputSchema = {
   type: "object",
   properties: {},
@@ -39,6 +41,7 @@ export function createToolDefinitions() {
       annotations: {
         readOnlyHint: false
       }
-    }
+    },
+    ...everydayToolDefinitions()
   ];
 }

@@ -95,22 +95,23 @@ test("ships a standalone script-driven Safari skill", async () => {
   }
 });
 
-test("runtime documentation is transport neutral", async () => {
-  for (const name of [
-    "documentation.md",
-    "documentation-troubleshooting.md"
-  ]) {
-    const documentation = await readFile(
-      new URL(
-        `plugins/safari-browser-use/server/src/${name}`,
-        repositoryRoot
-      ),
-      "utf8"
-    );
+test("runtime guide distinguishes MCP tools from the standalone REPL", async () => {
+  const documentation = await readFile(new URL(
+    "plugins/safari-browser-use/server/src/documentation.md",
+    repositoryRoot
+  ), "utf8");
 
-    assert.doesNotMatch(documentation, /\bMCP\b/);
-    assert.doesNotMatch(documentation, /`js_reset`/);
-  }
+  assert.match(documentation, /When connected via MCP/);
+  assert.match(documentation, /standalone Skill does not expose these tools/);
+  assert.match(documentation, /script-driven REPL/);
+  assert.match(documentation, /browser\.release\(\)/);
+
+  const troubleshooting = await readFile(new URL(
+    "plugins/safari-browser-use/server/src/documentation-troubleshooting.md",
+    repositoryRoot
+  ), "utf8");
+  assert.doesNotMatch(troubleshooting, /\bMCP\b/);
+  assert.doesNotMatch(troubleshooting, /`js_reset`/);
 });
 
 test("standalone CLI keeps REPL state isolated by session", async t => {

@@ -488,6 +488,7 @@ export function runWebmcpPageOperation(
     state.nativeFetch = nativeFetch;
 
     window.fetch = function patchedFetch(input, init) {
+      if (state.stopped) return nativeFetch.call(window, input, init);
       let url;
       let requestMethod = "GET";
       let credentials = "same-origin";
@@ -548,12 +549,14 @@ export function runWebmcpPageOperation(
                 .slice(0, maxResponseBodyBytes);
             }
 
+            const requestBody = await requestBodyPromise;
+            if (state.stopped) return;
             push({
               method: requestMethod,
               url: capturedUrl.origin + capturedUrl.pathname +
                 capturedUrl.search,
               requestHeaders,
-              requestBody: await requestBodyPromise,
+              requestBody,
               requestContentType: requestHeaders["content-type"],
               status: response.status,
               responseContentType,
@@ -627,6 +630,7 @@ export function runWebmcpPageOperation(
           }
 
           this.addEventListener("loadend", () => {
+            if (state.stopped) return;
             try {
               const url = new URL(entry.url, window.location.href);
 
@@ -747,6 +751,7 @@ export function runWebmcpPageOperation(
       return {
         installed: true,
         already: true,
+        documentId: documentId(),
         handoff: handoff.length,
         pending: buffer().length
       };
@@ -783,6 +788,7 @@ export function runWebmcpPageOperation(
     return {
       installed: true,
       already: false,
+      documentId: documentId(),
       handoff: handoff.length,
       pending: buffer().length,
       missedBeforeArm: missedBeforeArm()
@@ -796,6 +802,7 @@ export function runWebmcpPageOperation(
       return { uninstalled: false, pending: buffer().length };
     }
 
+    state.stopped = true;
     try {
       if (state.nativeFetch) {
         window.fetch = state.nativeFetch;

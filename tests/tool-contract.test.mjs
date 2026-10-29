@@ -5,12 +5,12 @@ import {
   createToolDefinitions
 } from "../plugins/safari-browser-use/server/src/tool-definitions.mjs";
 
-test("exposes a persistent JavaScript REPL and reset tool", () => {
+test("exposes the everyday API alongside the persistent REPL", () => {
   const tools = createToolDefinitions();
 
   assert.deepEqual(
     tools.map(tool => tool.name),
-    ["js", "js_reset"]
+    ["js", "js_reset", "browser_status", "list_tabs", "create_tab", "switch_tab", "close_tab", "navigate_to_url", "page_info", "get_page_content", "page_interactions", "wait_for_navigation", "release_control"]
   );
 });
 

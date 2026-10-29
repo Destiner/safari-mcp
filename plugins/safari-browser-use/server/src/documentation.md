@@ -5,13 +5,101 @@ the bundled runtime, so it always matches the installed API. Read it in full
 before browser work and follow it; do not rely on remembered guidance from an
 earlier version.
 
-Every action runs as one synchronous JavaScript cell against the injected
+When connected via MCP, the named tools below provide the everyday interface
+without writing code. The standalone Skill does not expose these tools: use its
+script-driven REPL and the Browser Safety and REPL sections of this guide instead.
+For MCP clients, the existing `js` tool remains an escape hatch. In that REPL, each action runs as
+one synchronous JavaScript cell against the injected
 `browser`, `googleAccounts`, `googleDocs`, and `googleSheets` objects over
 Safari's Apple Events interface. Bindings declared with `var` persist across
 cells until the session is reset; `const` and `let` are local to one cell. Define
 one tab binding per task-owned website and keep using it for that site. Re-query
 a tab only when you intentionally switch tabs, after a session reset, or after a
 failed cell that never created the binding.
+
+## Everyday MCP Tools
+
+Start with `browser_status`, then `list_tabs`. Confirm which window belongs to
+the intended profile; the API does not expose profile names or enforce profile
+isolation. A selected tab is selected within its window, not necessarily the
+frontmost window. New tabs require an explicit `window_id` from `list_tabs`.
+All page operations require an explicit session `handle` returned by listing
+or creating a tab. There is no implicit current-page fallback.
+
+| Tool | Arguments and behavior |
+|---|---|
+| `browser_status` | No arguments; checks Safari, Automation, and page scripting |
+| `list_tabs` | Optional `window_id`; returns handles, window IDs, titles, URLs, selected state, and API ownership |
+| `create_tab` | Required `window_id`; optional HTTP(S) `url` and `active` (default false) |
+| `switch_tab` | Required `handle`; selects that tab and brings its window forward |
+| `close_tab` | Required `handle`; existing tabs also require `allow_existing: true` and user permission; selected tabs are never closed |
+| `navigate_to_url` | Required `handle` and HTTP(S) `url` |
+| `page_info` | Required `handle`; returns title, URL, window ID, selected state, and ownership |
+| `get_page_content` | Required `handle`; optional CSS `root`; returns `{ format: "aria", snapshot }`, not HTML or Markdown |
+| `page_interactions` | Required `handle` and `actions` (1–20); see examples below |
+| `wait_for_navigation` | Required `handle`; optional exact HTTP(S) `expected_url`, `state` (`interactive` or `complete`), and `timeout_ms` (1–30000, default 10000 per wait stage) |
+| `release_control` | No arguments; releases indicators and recorders, preserving handles |
+
+Named calls stop any existing recorders and do not automatically record, probe,
+or persist site APIs. The legacy REPL can explicitly enable recording later.
+Invalid arguments are rejected before browser access. Tool results are available
+both as text and `structuredContent`; failed batches and post-creation navigation
+failures set MCP `isError` and return details rather than silently retrying.
+
+### Interaction examples
+
+Inspect `get_page_content` first and choose a target from that snapshot. Targets
+are either `{ "selector": "..." }` or `{ "role": "link", "name": "..." }`.
+Role/name matching is exact. Each targeted action must match exactly one element.
+For example, after observing a unique "new" link:
+
+```json
+{
+  "handle": "<handle from list_tabs or create_tab>",
+  "actions": [
+    { "type": "click", "target": { "role": "link", "name": "new" } },
+    { "type": "scroll", "delta_y": 300 }
+  ]
+}
+```
+
+Other actions are `type` with `text` (appends, does not replace), `keyPress` with
+`key` (Enter, Escape, Backspace, Delete, or arrow keys), `hover`, and
+`selectMenuItem` with `value` (a native select option value). Scroll accepts an
+optional `delta_x`. Hover and key events are synthetic, not native macOS input.
+Confirm sending, posting, purchasing, voting, deleting, or changing account data
+before invoking an action that does so; the tools are not a confirmation UI.
+
+All batch arguments are validated before the first action. A runtime failure
+returns `ok: false`, `completed`, `failed_index`, prior `results`, and `error`.
+Completed actions are not rolled back. Inspect the page before deciding what to
+do next, rather than repeating the entire batch.
+
+### Handles, navigation, and cleanup
+
+Handles expire on reconnect or `js_reset`. They bind to a tab coordinate and
+URL/title fingerprint. Tab index shifts or external navigation can invalidate
+them: relist and confirm the target rather than guessing. The API never follows
+a URL to another coordinate. Safari provides no immutable tab ID, so an
+indistinguishable replacement at the same coordinate cannot be detected.
+
+An exact `expected_url` can accommodate a navigation already completed at the
+original coordinate only while surrounding window topology remains unchanged.
+Unexpected intermediate URLs, changed peer titles, or structural tab changes may
+fail closed. `wait_for_navigation` is not a general network-idle wait.
+
+If a tab was created but subsequent navigation failed, the result includes
+`created: true`, its handle, last-known metadata, `ok: false`, and an error. Do
+not retry creation blindly. The handle can be used for cleanup only if still
+resolvable. Relisting a stale tab loses API-created ownership, so closing it then
+requires explicit `allow_existing: true` and user permission.
+
+Close only task-owned background tabs. To clean up a task tab after making it
+visible, first switch back to the user's original tab, then close the task tab.
+Always call `release_control` when finished, including on failure. Screenshots,
+network inspection, password access, and profile selection by name are not
+provided by these tools. Use `js` only when the documented named API cannot
+express the task, and read the remaining REPL guide before doing so.
 
 ## Browser Safety
 

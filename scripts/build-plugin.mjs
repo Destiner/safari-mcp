@@ -108,6 +108,7 @@ export async function buildPlugin({
     playwrightAriaSnapshot,
     safariVersion,
     toolDefinitions,
+    everydayTools,
     nativeInput,
     googleAccounts,
     googleDocs,
@@ -125,6 +126,7 @@ export async function buildPlugin({
     buildPlaywrightAriaSnapshot(),
     readFile(safariVersionPath, "utf8"),
     readFile(toolDefinitionsPath, "utf8"),
+    readFile(resolve(dirname(toolDefinitionsPath), "everyday-tools.mjs"), "utf8"),
     readFile(nativeInputPath, "utf8"),
     readFile(googleAccountsPath, "utf8"),
     readFile(googleDocsPath, "utf8"),
@@ -138,7 +140,7 @@ export async function buildPlugin({
     readFile(troubleshootingPath, "utf8")
   ]);
   const withoutExports = source =>
-    source.replace(/^export\s+/gm, "");
+    source.replace(/^import .* from .*;\n/gm, "").replace(/^export\s+/gm, "");
   const replacements = [
     ["/*__SBU_PAGE_RUNTIME__*/", withoutExports(pageRuntime)],
     [
@@ -149,6 +151,7 @@ export async function buildPlugin({
     ],
     ["/*__SBU_SAFARI_VERSION__*/", withoutExports(safariVersion)],
     ["/*__SBU_TOOL_DEFINITIONS__*/", withoutExports(toolDefinitions)],
+    ["/*__SBU_EVERYDAY_TOOLS__*/", withoutExports(everydayTools)],
     ["/*__SBU_NATIVE_INPUT__*/", withoutExports(nativeInput)],
     ["/*__SBU_GOOGLE_ACCOUNTS__*/", withoutExports(googleAccounts)],
     ["/*__SBU_GOOGLE_DOCS__*/", withoutExports(googleDocs)],

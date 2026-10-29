@@ -27,6 +27,23 @@ function createPage(html) {
   };
 }
 
+test("hover dispatches synthetic pointer/mouse events only on a strict unique target", () => {
+  const { execute, window } = createPage('<button>Go</button><button>Other</button>');
+  const events = [];
+  const button = window.document.querySelector("button");
+  for (const type of ["pointerover", "pointerenter", "mouseover", "mouseenter", "mousemove"]) {
+    button.addEventListener(type, event => events.push([event.type, event.isTrusted]));
+  }
+  assert.deepEqual(execute("playwright.locator.hover", {
+    locator: [{ type: "css", selector: "button:first-child" }]
+  }), { hovered: true, trusted: false });
+  assert.deepEqual(events.map(event => event[0]), ["pointerover", "pointerenter", "mouseover", "mouseenter", "mousemove"]);
+  assert.ok(events.every(event => !event[1]));
+  assert.throws(() => execute("playwright.locator.hover", {
+    locator: [{ type: "css", selector: "button" }]
+  }), /strict mode violation/);
+});
+
 test("inspects the Google Docs title and native editor point", () => {
   const { execute, window } = createPage(`
     <input class="docs-title-input" value="Project note">

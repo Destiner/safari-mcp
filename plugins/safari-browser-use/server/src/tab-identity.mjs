@@ -84,6 +84,7 @@ export function createTabIdentity(metadata) {
 
 export function retargetTabIdentity(identity, url) {
   identity.url = String(url);
+  if (identity.everyday) identity.everydayNavigating = true;
 }
 
 function updateTabIdentity(identity, metadata) {
@@ -97,6 +98,10 @@ function updateTabIdentity(identity, metadata) {
 
 export function completeTabNavigation(identity, metadata) {
   const targetChanged = String(metadata.id) !== identity.id;
+  if (identity.everyday && targetChanged) {
+    throw new Error("stale_tab_handle: original coordinate changed; relist tabs");
+  }
+  if (identity.everyday) identity.everydayNavigating = false;
   const expectedTarget =
     String(metadata.url || "") === identity.url;
 
@@ -112,7 +117,23 @@ export function completeTabNavigation(identity, metadata) {
   return updateTabIdentity(identity, metadata);
 }
 
+function everydayTopologyMatches(identity, tabs) {
+  const previous = identity.everydayTopology;
+  const current = tabs.filter(tab => tabWindowId(tab.id) === identity.windowId);
+  return previous && current.length === previous.length && current.every((tab, index) =>
+    String(tab.id) === previous[index].id && (String(tab.id) === identity.id ||
+      String(tab.url || "") === previous[index].url && String(tab.title || "") === previous[index].title));
+}
+
 export function resolveTabIdentity(identity, tabs) {
+  if (identity.everyday) {
+    const current = tabs.find(tab => String(tab.id) === identity.id);
+    if (current && (String(current.url || "") === identity.url && String(current.title || "") === identity.title ||
+        identity.everydayNavigating && everydayTopologyMatches(identity, tabs))) {
+      return updateTabIdentity(identity, current);
+    }
+    throw new Error("stale_tab_handle: coordinate or fingerprint changed; relist tabs");
+  }
   const candidates = tabs.filter(tab =>
     tabWindowId(tab.id) === identity.windowId
   );
@@ -145,6 +166,17 @@ export function resolveTabForUrlWait(
   expected,
   exact
 ) {
+  if (identity.everyday) {
+    if (!everydayTopologyMatches(identity, tabs)) {
+      throw new Error("stale_tab_handle: navigation topology changed; relist tabs");
+    }
+    const current = tabs.find(tab => String(tab.id) === identity.id);
+    if (current && exact && String(current.url || "") === expected) {
+      return updateTabIdentity(identity, current);
+    }
+    resolveTabIdentity(identity, tabs);
+    return null;
+  }
   const matches = tab => {
     const url = String(tab.url || "");
 

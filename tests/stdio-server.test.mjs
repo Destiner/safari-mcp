@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { createToolDefinitions } from "../plugins/safari-browser-use/server/src/tool-definitions.mjs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
   StdioClientTransport
@@ -39,9 +40,19 @@ test("starts from the Codex plugin manifest", async t => {
 
   const tools = await client.listTools();
   assert.deepEqual(
-    tools.tools.map(tool => tool.name),
-    ["js", "js_reset"]
+    tools.tools,
+    createToolDefinitions()
   );
+  for (const [name, args] of [
+    ["create_tab", {}],
+    ["page_info", {}],
+    ["navigate_to_url", { handle: "invalid", url: "javascript:alert(1)" }],
+    ["page_interactions", { handle: "invalid", actions: [{ type: "eval", code: "1" }] }]
+  ]) {
+    const result = await client.callTool({ name, arguments: args });
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /invalid_arguments/);
+  }
 });
 
 test("starts the real MCP entrypoint over stdio", async t => {
@@ -82,8 +93,8 @@ test("starts the real MCP entrypoint over stdio", async t => {
   });
 
   assert.deepEqual(
-    tools.tools.map(tool => tool.name),
-    ["js", "js_reset"]
+    tools.tools,
+    createToolDefinitions()
   );
   assert.equal(first.structuredContent.value, 42);
   assert.deepEqual(second.structuredContent.value, {
@@ -238,7 +249,7 @@ test("advertises dynamic site tools and exposes the automation switches", async 
   assert.equal(client.getServerCapabilities()?.tools?.listChanged, true);
 
   const before = await client.listTools();
-  assert.deepEqual(before.tools.map(tool => tool.name), ["js", "js_reset"]);
+  assert.deepEqual(before.tools, createToolDefinitions());
 
   const auto = await client.callTool({
     name: "js",

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
+import { createEverydayTools } from "../plugins/safari-browser-use/server/src/everyday-tools.mjs";
 
 import { Window } from "happy-dom";
 
@@ -121,6 +123,57 @@ test("uninstall restores the native fetch and XHR methods", async () => {
   assert.equal(page.window.fetch, nativeFetch);
   assert.equal(FakeXhr.prototype.open, nativeOpen);
   assert.equal(page.run("webmcp.status").installed, false);
+});
+
+test("valid named calls uninstall existing recorders and cannot rearm or persist them", async () => {
+  const page = createPage();
+  const source = await readFile(new URL("../plugins/safari-browser-use/server/src/jxa-server.template.js", import.meta.url), "utf8");
+  const functions = source.slice(source.indexOf("  function ensureWebmcpRecorder("), source.indexOf("  function webmcpSleep("));
+  const installed = page.run("webmcp.install");
+  const recording = new Map([["12:1", { site: "example.com", documentId: installed.documentId }]]);
+  const operations = [];
+  const forbidden = () => { throw new Error("must not drain or persist"); };
+  const runtime = new Function("webmcpStore", "runPage", "drainWebmcp", "saveSiteMemory", "listTabs", `
+    var everydayOperation = true;
+    ${functions}
+    return { beginOperation: stopAllWebmcpRecorders, ensure: ensureWebmcpRecorder };
+  `)({
+    recording: id => recording.get(id), recordingTabIds: () => [...recording.keys()],
+    stop: id => recording.delete(id), summary: () => ({})
+  }, (method) => { operations.push(method); return page.run(method); }, forbidden, forbidden, () => [{ id: "12:1" }]);
+  const api = createEverydayTools({
+    beginOperation: runtime.beginOperation,
+    doctor() { runtime.ensure("12:1"); return { ok: true }; }
+  });
+  assert.throws(() => api.call("browser_status", { invalid: true }), /invalid_arguments/);
+  assert.equal(page.run("webmcp.status").installed, true);
+  api.call("browser_status", {});
+  assert.deepEqual(operations, ["webmcp.status", "webmcp.uninstall"]);
+  assert.equal(page.run("webmcp.status").installed, false);
+  await page.window.fetch("/api/named-interaction");
+  await settle();
+  page.window.dispatchEvent(new page.window.Event("pagehide"));
+  assert.equal(page.run("webmcp.drain").captures.length, 0);
+  assert.equal(page.window.sessionStorage.getItem("__safari_browser_use_webmcp_spill__"), null);
+  // Explicit legacy recording remains available later.
+  page.run("webmcp.install");
+  await page.window.fetch("/api/legacy");
+  await settle();
+  assert.equal(page.run("webmcp.drain").captures.length, 1);
+  page.run("webmcp.uninstall");
+});
+
+test("uninstall cancels capture from a fetch already in flight", async () => {
+  const page = createPage();
+  let complete;
+  page.window.fetch = () => new Promise(resolve => { complete = resolve; });
+  page.run("webmcp.install");
+  const pending = page.window.fetch("/api/pending");
+  page.run("webmcp.uninstall");
+  complete(jsonResponse({ ok: true }));
+  await pending;
+  await settle();
+  assert.equal(page.run("webmcp.drain").captures.length, 0);
 });
 
 test("pending captures spill to sessionStorage and hand off on reinstall", async () => {

@@ -1792,6 +1792,15 @@ export function runPageOperation(
           ? { transition: observedTransition }
           : {})
       };
+    case "hover": {
+      element.scrollIntoView?.({ block: "center", inline: "nearest" });
+      moveControlCursorToElement(element, params);
+      for (const type of ["pointerover", "pointerenter", "mouseover", "mouseenter", "mousemove"]) {
+        const EventClass = type.startsWith("pointer") ? window.PointerEvent : window.MouseEvent;
+        element.dispatchEvent(new EventClass(type, { bubbles: !type.endsWith("enter"), cancelable: true, view: window }));
+      }
+      return { hovered: true, trusted: false };
+    }
     case "canvasSnapshot":
       return canvasSnapshot(element, params);
     case "setInputFiles": {

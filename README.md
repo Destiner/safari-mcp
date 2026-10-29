@@ -50,6 +50,33 @@ runtime available to the agent to preserve its script session between calls.
 > its `windowId` when creating tabs. Window IDs are not persistent profile names,
 > and this bridge does not enforce isolation between profiles.
 
+## Everyday MCP API (fork)
+
+The fork also exposes an Apple-style everyday API over the existing Safari
+session. It is not a drop-in replacement for Apple's native MCP server:
+
+- **Connection:** `browser_status`, `release_control`
+- **Tabs:** `list_tabs`, `create_tab`, `switch_tab`, `close_tab`
+- **Pages:** `navigate_to_url`, `page_info`, `get_page_content`
+- **Actions:** `page_interactions`, `wait_for_navigation`
+- **Escape hatch:** the original `js` and `js_reset`
+
+New tabs require an explicit `window_id`; page operations require an opaque
+session `handle`. Confirm the intended profile/window instead of assuming that
+the current window is Personal or Work. `get_page_content` returns an ARIA
+snapshot, not native Safari's Markdown/HTML extraction. Screenshots and network
+inspection are not included.
+
+Named tools do not automatically record or probe site APIs. Selected tabs cannot
+be closed, and user-owned tabs require explicit permission. Handles fail closed
+when tab coordinates or URL/title fingerprints change; relist instead of guessing.
+They expire when the connection or REPL resets. Safari does not expose immutable
+tab IDs, so indistinguishable replacements cannot be detected.
+
+See the [operating guide](plugins/safari-browser-use/server/src/documentation.md#everyday-mcp-tools)
+for schemas, examples, partial-failure behavior, and cleanup rules. The original
+plugin/skill REPL interface below remains available.
+
 ## Demo
 
 <p align="center">
